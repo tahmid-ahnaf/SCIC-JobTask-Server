@@ -37,6 +37,14 @@ async function run() {
       res.send(result);
     });
 
+    app.get('/products/:name', async (req, res) => {
+      const name = req.params.name;
+
+      const query = { productName: { $regex: name, $options: 'i' } };
+      const product = await productCollection.find(query).toArray();
+      res.send(product);
+    })
+
     // users related api
     app.get('/users', async (req, res) => {
       const result = await userCollection.find().toArray();
