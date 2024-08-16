@@ -32,9 +32,24 @@ async function run() {
     const productCollection = client.db("productsDB").collection("products");
     const paymentCollection = client.db("productsDB").collection("payments");
 
-    app.get('/allproducts', async (req, res) => {
+    app.get('/products', async (req, res) => {
       const result = await productCollection.find().toArray();
       res.send(result);
+    });
+
+    app.get('/paginatedproducts', async (req, res) => {
+      const page = parseInt(req.query.page) - 1;
+      const size = parseInt(req.query.size);
+      const result = await productCollection.find()
+      .skip(page*size)
+      .limit(size)
+      .toArray();
+      res.send(result);
+    });
+
+    app.get('/productCount', async (req, res) => {
+      const count = await productCollection.estimatedDocumentCount();
+      res.send({count});
     });
 
     app.get('/products/:name', async (req, res) => {
@@ -44,6 +59,38 @@ async function run() {
       const product = await productCollection.find(query).toArray();
       res.send(product);
     })
+
+    app.get('/categorizedProducts', async (req, res) => {
+      const { brand, category, minPrice, maxPrice } = req.query;
+  
+      const query = {};
+  
+      if (brand) {
+          query.brand = { $regex: brand, $options: 'i' };
+      }
+  
+      if (category) {
+          query.category = { $regex: category, $options: 'i' };
+      }
+  
+      if (minPrice || maxPrice) {
+          query.price = {};
+          if (minPrice) {
+              query.price.$gte = parseFloat(minPrice);
+          }
+          if (maxPrice) {
+              query.price.$lte = parseFloat(maxPrice);
+          }
+      }
+  
+      try {
+          const result = await productCollection.find(query).toArray();
+          res.send(result);
+      } catch (err) {
+          res.status(500).send({ message: 'Error fetching products', error: err });
+      }
+  });
+  
 
     // users related api
     app.get('/users', async (req, res) => {
