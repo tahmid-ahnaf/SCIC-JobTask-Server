@@ -16,7 +16,7 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
-    strict: true,
+    strict: false,
     deprecationErrors: true,
   },
 });
@@ -67,8 +67,7 @@ async function run() {
         category,
         minPrice,
         maxPrice,
-        lowtoHigh,
-        hightoLow,
+        lowToHigh,
         newestFirst,
         page,
         size
@@ -79,7 +78,7 @@ async function run() {
 
       const query = {};
 
-      if (brand) {
+      if (brand && brand!="All") {
         query.brand = { $regex: brand, $options: "i" };
       }
 
@@ -87,7 +86,7 @@ async function run() {
         query.productName = { $regex: productName, $options: "i" };
       }
 
-      if (category) {
+      if (category && category!="All") {
         query.category = { $regex: category, $options: "i" };
       }
 
@@ -103,9 +102,9 @@ async function run() {
 
       const sort = {};
 
-      if (lowtoHigh) {
+      if (lowToHigh==="Ascending") {
         sort.price = 1; // Ascending order
-      } else if (hightoLow) {
+      } else if(lowToHigh==="Descending") {
         sort.price = -1; // Descending order
       }
 
@@ -125,6 +124,18 @@ async function run() {
           .send({ message: "Error fetching products", error: err });
       }
     });
+
+    app.get("/categories", async (req, res) => {
+      const result = await productCollection.distinct("category");
+      res.send(result);
+    });
+
+    app.get("/brands", async (req, res) => {
+      const result = await productCollection.distinct("brand");
+      res.send(result);
+    });
+
+
 
     // users related api
     app.get("/users", async (req, res) => {
